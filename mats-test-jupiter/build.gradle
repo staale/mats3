@@ -18,6 +18,10 @@ dependencies {
     // H2 Database, for database tests - but we do not want to make this dependency transitive, so compileOnly.
     compileOnly "com.h2database:h2:$h2Version"
 
+    // For extension Extension_MatsClassMapping, this is needed, and will have to be provided by the library user
+    // if Extension_MatsClassMapping is used.
+    implementation project(":mats-spring")
+
     // :: TEST
 
     testImplementation project(':mats-spring-test')

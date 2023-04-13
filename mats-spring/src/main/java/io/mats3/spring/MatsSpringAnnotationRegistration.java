@@ -63,6 +63,7 @@ import io.mats3.MatsFactory;
 import io.mats3.MatsInitiator.MessageReference;
 import io.mats3.MatsStage;
 import io.mats3.spring.MatsClassMapping.Stage;
+import sun.rmi.transport.Endpoint;
 
 /**
  * The {@link BeanPostProcessor}-class specified by the {@link EnableMats @EnableMats} annotation.
@@ -748,11 +749,22 @@ public class MatsSpringAnnotationRegistration implements
                 + " :: MatsEndpoint:[param#" + endpointParam + "], EndpointConfig:[param#" + configParam + "]");
     }
 
+    private void processMatsClassMapping(MatsClassMapping matsClassMapping, Object bean) {
+        // :: Find which MatsFactory to use
+        MatsFactory matsFactoryToUse = getMatsFactoryToUse(
+                "@MatsClassMapping-annotated bean '" + classNameWithoutPackage(bean) + "'",
+                getClassOfBean(bean),
+                matsClassMapping.matsFactoryCustomQualifierType(),
+                matsClassMapping.matsFactoryQualifierValue(),
+                matsClassMapping.matsFactoryBeanName());
+        processMatsClassMapping(matsFactoryToUse, matsClassMapping,  bean);
+    }
+
     /**
      * Process a class annotated with {@link MatsClassMapping @MatsClassMapping} - note that one class can have multiple
      * such annotations, and this method will be invoked for each of them.
      */
-    private void processMatsClassMapping(MatsClassMapping matsClassMapping, Object bean) {
+    public static void processMatsClassMapping(MatsFactory matsFactory, MatsClassMapping matsClassMapping, Object bean) {
         if (log.isDebugEnabled()) log.debug(LOG_PREFIX + "Processing @MatsClassMapping bean '"
                 + classNameWithoutPackage(bean) + "':#: Annotation:[" + matsClassMapping + "]");
 
@@ -848,20 +860,12 @@ public class MatsSpringAnnotationRegistration implements
                 + classNameWithoutPackage(requestClass) + "], and reply DTO [" + classNameWithoutPackage(replyClass)
                 + "].");
 
-        // :: Find which MatsFactory to use
-
-        MatsFactory matsFactoryToUse = getMatsFactoryToUse(
-                "@MatsClassMapping-annotated bean '" + classNameWithoutPackage(bean) + "'",
-                matsClass,
-                matsClassMapping.matsFactoryCustomQualifierType(),
-                matsClassMapping.matsFactoryQualifierValue(),
-                matsClassMapping.matsFactoryBeanName());
 
         // :: Create the Staged Endpoint
 
         MatsEndpoint<?, ?> ep;
         try {
-            ep = matsFactoryToUse.staged(matsClassMapping.endpointId(), replyClass, matsClass);
+            ep = matsFactory.staged(matsClassMapping.endpointId(), replyClass, matsClass);
         }
         catch (RuntimeException e) {
             throw new MatsSpringConfigException("Could not create endpoint for @MatsClassMapping endpoint at class '"
@@ -873,7 +877,7 @@ public class MatsSpringAnnotationRegistration implements
         // :: Hold on to all non-null fields of the bean - these are what Spring has injected. Make "template".
 
         // Need to check if the State class sets any fields by itself, i.e. with no-args constructor or initial value.
-        Object instantiatedStateObject = matsFactoryToUse.getFactoryConfig().instantiateNewObject(matsClass);
+        Object instantiatedStateObject = matsFactory.getFactoryConfig().instantiateNewObject(matsClass);
 
         Field[] processContextField_hack = new Field[1];
         LinkedHashMap<Field, Object> templateFields = new LinkedHashMap<>();
@@ -1110,7 +1114,7 @@ public class MatsSpringAnnotationRegistration implements
     /**
      * Find which parameter is the DTO on a method in a @MatsClassMapping service.
      */
-    private int findDtoParamIndexForMatsClassMappingLambdaMethod(Method method) {
+    private static int findDtoParamIndexForMatsClassMappingLambdaMethod(Method method) {
         Parameter[] parameters = method.getParameters();
         int dtoParamPos = -1;
 
@@ -1155,7 +1159,7 @@ public class MatsSpringAnnotationRegistration implements
      * the problem being that primitive types cannot be null: Null are not coerced into the default value for the
      * primitive as one might could think.
      */
-    Object[] defaultArgsArray(Method method) {
+    static Object[] defaultArgsArray(Method method) {
         Parameter[] parameters = method.getParameters();
         Object[] args = new Object[parameters.length];
         for (int i = 0; i < parameters.length; i++) {

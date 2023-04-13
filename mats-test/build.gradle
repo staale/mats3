@@ -19,6 +19,13 @@ dependencies {
     // client), even though we'll probably only be using one of them, and that is probably ActiveMQ due to the test
     // tooling defaulting to this.)
     implementation project(':mats-test-broker')
+
+    // For extension Extension_MatsClassMapping, we need to include the spring dependencies. We expect anyone that
+    // uses that extension to also provide mats-spring and the SpringContext in their projects dependencies.
+    compileOnly project(":mats-spring")
+    compileOnly "org.springframework:spring-context:$springVersion"
+
+
     // .. therefore, also pull in ActiveMQ Broker with Client
     implementation "org.apache.activemq:activemq-broker:$activeMqVersion"
     // .. and pull in The Artemis (Apache ActiveMQ Artemis) Client and Server, since you can choose to test with it.
