@@ -341,14 +341,9 @@ public abstract class AbstractMatsAnnotatedClass {
                         + "], as a bean with the same type already exists.");
                 return;
             }
-            if (MatsFactory.class.equals(field.getType())) {
+            if (fieldInstance instanceof MatsFactory) {
                 // -> Yes, then we should not register this as a bean
                 if (log.isTraceEnabled()) log.trace(LOG_PREFIX + "    \\- Skipping field, as it is a MatsFactory.");
-                return;
-            }
-            if (MatsFuturizer.class.equals(field.getType())) {
-                // -> Yes, then we should not register this as a bean
-                if (log.isTraceEnabled()) log.trace(LOG_PREFIX + "    \\- Skipping field, as it is a MatsFuturizer.");
                 return;
             }
 
