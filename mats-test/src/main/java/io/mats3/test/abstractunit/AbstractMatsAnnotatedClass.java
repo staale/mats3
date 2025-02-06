@@ -20,6 +20,7 @@ import org.springframework.util.ReflectionUtils;
 import io.mats3.MatsEndpoint;
 import io.mats3.MatsFactory;
 import io.mats3.spring.MatsSpringAnnotationRegistration;
+import io.mats3.util.MatsFuturizer;
 
 /**
  * Base class used for Rule_MatsAnnotatedClass and Extension_MatsAnnotatedClass to support testing of classes annotated
@@ -338,6 +339,16 @@ public abstract class AbstractMatsAnnotatedClass {
                 // -> Yes, there is already a bean with this type, so we skip it.
                 if (log.isDebugEnabled()) log.debug(LOG_PREFIX + "   \\- Skipping field [" + descFieldName
                         + "], as a bean with the same type already exists.");
+                return;
+            }
+            if (MatsFactory.class.equals(field.getType())) {
+                // -> Yes, then we should not register this as a bean
+                if (log.isTraceEnabled()) log.trace(LOG_PREFIX + "    \\- Skipping field, as it is a MatsFactory.");
+                return;
+            }
+            if (MatsFuturizer.class.equals(field.getType())) {
+                // -> Yes, then we should not register this as a bean
+                if (log.isTraceEnabled()) log.trace(LOG_PREFIX + "    \\- Skipping field, as it is a MatsFuturizer.");
                 return;
             }
 
